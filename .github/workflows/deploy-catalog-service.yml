@@ -98,5 +98,12 @@ jobs:
               "$IMAGE"
             docker logout ghcr.io
             docker image prune -f
-            sleep 10
-            curl -fsS http://localhost:8081/q/health/ready
+            for i in $(seq 1 12); do
+              if curl -fsS http://localhost:8081/q/health/ready; then
+                exit 0
+              fi
+              echo "Waiting for catalog-service ($i/12)..."
+              sleep 5
+            done
+            docker logs catalog-service --tail 30
+            exit 1
