@@ -25,3 +25,27 @@ updates:
     labels:
       - "dependencies"
       - "docker"
+
+  - package-ecosystem: "maven"
+    directory: "/services/catalog-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - "dependencies"
+      - "java"
+
+  - package-ecosystem: "docker"
+    directory: "/services/catalog-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - "dependencies"
+      - "docker"
