@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quantum Store PoC</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #f8fafc; display: grid; place-items: center; min-height: 100vh; margin: 0; }
+    .card { background: #1e293b; padding: 2rem; border-radius: 12px; max-width: 500px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+    code { display: block; background: #0f172a; padding: 1rem; border-radius: 8px; margin-top: 1rem; color: #38bdf8; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🛒 Quantum Store PoC</h1>
+    <p>Frontend hosted on <strong>Cloudflare Pages</strong></p>
+    <code id="output">Waiting for backend connection...</code>
+  </div>
+  <script>
+    // We will replace this URL once Oracle Cloud is live
+    const API_URL = "";
+    if (API_URL) {
+      fetch(`${API_URL}/api/hello`)
+        .then(res => res.json())
+        .then(data => document.getElementById("output").textContent = JSON.stringify(data, null, 2))
+        .catch(err => document.getElementById("output").textContent = "Error: " + err.message);
+    }
+  </script>
+</body>
+</html>
