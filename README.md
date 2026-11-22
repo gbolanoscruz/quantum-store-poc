@@ -1,68 +1,61 @@
-# 🛒 Quantum Store PoC
+# Quantum Store PoC
 
-[![Security & Vulnerability Scan](https://github.com/gbolanoscruz/quantum-store-poc/actions/workflows/security-scan.yml/badge.svg)](https://github.com/gbolanoscruz/quantum-store-poc/actions/workflows/security-scan.yml)
-[![License](https://img.shields.io/github/license/gbolanoscruz/quantum-store-poc)](LICENSE)
+Event-driven e-commerce Proof of Concept built with Java microservices, a modern web frontend, DevSecOps guardrails, and a **$0 hybrid cloud architecture**.
 
-**Proof of Concept (PoC)** of a modern e-commerce platform built on a cloud-native, event-driven microservices architecture, featuring built-in observability and automated DevSecOps pipelines.
+## Architecture
 
-## 🏛️ Architecture & Microservices
-
-The project is structured as a modular **Monorepo** covering the following business and platform domains:
-
-| Microservice | Core Responsibility | Status |
-| :--- | :--- | :---: |
-| **Orders** | Order lifecycle management and shopping cart | 🚧 Planned |
-| **Payments** | Payment processing, gateway integration, and reconciliation | 🚧 Planned |
-| **Inventory** | Real-time stock control, reservations, and availability | 🚧 Planned |
-| **Shipping** | Shipping rate calculation, logistics, and package tracking | 🚧 Planned |
-| **Billing** | Invoicing, tax calculation, and receipts | 🚧 Planned |
-| **Sessions / Auth** | User session management, identity, and access control | 🚧 Planned |
-| **Languages (i18n)** | Internationalization, translations, and multi-region content | 🚧 Planned |
-| **Communications** | Email, SMS, and real-time event notifications | 🚧 Planned |
-| **Observability** | Centralized logging, metrics, and distributed tracing | 🚧 Planned |
-
-## 🛠️ Tech Stack *(WIP)*
-
-- **Backend:** Java (Microservices Architecture)
-- **Frontend:** Modern Web Framework *(TBD)*
-- **Infrastructure:** Docker & Kubernetes (`infra/`)
-- **CI/CD & Security:** GitHub Actions, Trivy, CodeQL, Dependabot, and Secret Scanning
-
-## 📂 Monorepo Structure
-
-```text
-quantum-store-poc/
-├── .github/workflows/   # CI/CD pipelines and automated security scans
-├── docs/                # Architecture diagrams, ADRs, and technical docs
-├── frontend/            # Modern web storefront client
-├── infra/
-│   ├── docker/          # Docker Compose and local environment configs
-│   └── k8s/             # Kubernetes manifests
-└── services/            # Java microservices
+```mermaid
+flowchart LR
+    User([Browser]) -->|HTTPS| CF[Cloudflare Workers<br/>Static Frontend]
+    User -->|HTTPS / API Calls| Caddy[Caddy Reverse Proxy<br/>DuckDNS + Auto TLS]
+    subgraph OCI [Oracle Cloud Always Free - Oracle Linux 9]
+        Caddy -->|:8080| Hello[hello-service<br/>Java 21 / Docker]
+    end
 ```
 
-## 🔒 Security & Workflow
+### Live Endpoints
+- **Frontend:** `https://quantum-store-poc.gbolanoscruz.workers.dev`
+- **Backend API (Health / Hello):** `https://quantum-store-api.duckdns.org/api/hello`
 
-The main branch is protected using GitHub Rulesets:
+## Current Stack & Infrastructure
 
-    All changes must be submitted via Pull Request.
+| Layer | Technology | Hosting / Cost |
+| :--- | :--- | :--- |
+| **Frontend** | Static HTML/JS *(PoC skeleton)* | Cloudflare Workers ($0) |
+| **Backend** | Java 21 (Docker multi-stage, Eclipse Temurin Alpine) | Oracle Cloud Always Free `VM.Standard.E2.1.Micro` ($0) |
+| **Reverse Proxy & TLS** | Caddy + Let's Encrypt + DuckDNS | Self-hosted in Docker on OCI ($0) |
+| **CI/CD & Security** | GitHub Actions, Trivy, CodeQL, Dependabot | GitHub ($0) |
 
-    Trivy automatically scans for CRITICAL and HIGH vulnerabilities on every PR.
+## DevSecOps Controls
+- **Branch Protection:** GitHub Rulesets enforced on `main` (Pull Request required, direct pushes blocked).
+- **Vulnerability Scanning:** Automated **Trivy** filesystem/container scan configured as a required status check on every PR.
+- **SAST & Dependency Hygiene:** **CodeQL** (Actions + Java) and **Dependabot** enabled.
+- **Least-Privilege Networking:** Only ports `80` and `443` exposed publicly via OCI Security Lists; internal services stay bound behind Caddy.
 
-    CodeQL, Dependabot, and Secret Scanning run continuously across the repository.
+## Repository Structure
 
-## 🗺️ Roadmap
+```text
+.
+├── .github/workflows/   # CI/CD and Trivy security workflows
+├── docs/                # Infrastructure runbooks and ADRs
+├── frontend/            # Storefront static assets (deployed to Cloudflare)
+└── services/
+    └── hello-service/   # Initial Java 21 Dockerized microservice
+```
 
-    [x] Initial Monorepo setup and main branch protection
+## Documentation
+- [Infrastructure Runbook](docs/infrastructure-runbook.md) — OCI setup, Oracle Linux 9 tuning (swap, `firewalld` + Docker), and Caddy HTTPS configuration.
+- [Security Policy](SECURITY.md) — Active DevSecOps controls and vulnerability reporting process.
+- [ADR-001: Hybrid Zero-Cost Infrastructure](docs/adr/001-hybrid-zero-cost-infra.md)
+- [ADR-002: Fixed HTTPS with DuckDNS & Caddy](docs/adr/002-fixed-https-duckdns-caddy.md)
 
-    [x] Base CI/CD security pipeline with Trivy on GitHub Actions
-
-    [ ] Cutting-edge tech stack definition (Backend & Frontend)
-
-    [ ] System architecture design (API Gateway, sync/async messaging, and databases)
-
-    [ ] First microservice implementation and local Docker setup
-
+## Roadmap
+- [x] Monorepo setup + DevSecOps guardrails (Rulesets, Trivy, CodeQL)
+- [x] Zero-cost hybrid deployment (Cloudflare + Oracle Cloud)
+- [x] Fixed HTTPS endpoint (DuckDNS + Caddy)
+- [ ] Core microservices architecture (Catalog, Orders, Inventory, Payments)
+- [ ] Modern frontend migration
+- [ ] Event-driven messaging & observability
 
 ---
 **Built with 💻 by Gustavo Bolaños**
