@@ -741,7 +741,8 @@
       try {
         const res = await fetch(`${ORDERS_API}/${orderId}/cancel`, {
           method: "POST",
-          body: ""
+          headers: { "Content-Type": "application/json" },
+          body: "{}"
         });
         if (!res.ok) {
           const msg = await res.text();
@@ -751,6 +752,7 @@
         await loadStorefront();
       } catch (err) {
         setOrderFeedback("error", `Cancel failed: ${err.message}`);
+        alert(`Cancel failed: ${err.message}`);
         btn.disabled = false;
         btn.textContent = "Cancel";
       }
