@@ -83,14 +83,19 @@ jobs:
           host: ${{ secrets.OCI_HOST }}
           username: ${{ secrets.OCI_USER }}
           key: ${{ secrets.OCI_SSH_KEY }}
+          command_timeout: 4m
           envs: GHCR_USER,GHCR_TOKEN,IMAGE,INVENTORY_DB_URL,INVENTORY_DB_USER,INVENTORY_DB_PASSWORD
           script: |
             set -e
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-            docker pull "$IMAGE"
-            docker network create quantum-net || true
+            echo ">>> Stopping old inventory-service to free RAM..."
             docker stop inventory-service || true
             docker rm inventory-service || true
+            echo ">>> Logging in & pulling image..."
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            docker pull "$IMAGE"
+            docker logout ghcr.io
+            docker network create quantum-net || true
+            echo ">>> Starting inventory-service..."
             docker run -d \
               --name inventory-service \
               --network quantum-net \
@@ -101,7 +106,6 @@ jobs:
               -e INVENTORY_DB_USER="$INVENTORY_DB_USER" \
               -e INVENTORY_DB_PASSWORD="$INVENTORY_DB_PASSWORD" \
               "$IMAGE"
-            docker logout ghcr.io
             docker image prune -f
             for i in $(seq 1 12); do
               if curl -fsS http://localhost:8082/q/health/ready; then
