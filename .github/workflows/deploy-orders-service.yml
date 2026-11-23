@@ -1,0 +1,98 @@
+name: Build, Scan & Deploy (orders-service)
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "services/orders-service/**"
+      - ".github/workflows/deploy-orders-service.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  REGION: us-central1
+  SERVICE_NAME: orders-service
+  AR_REPO: quantum-store
+
+jobs:
+  build-scan-deploy:
+    name: Build, Scan & Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image locally for security scan
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/orders-service
+          load: true
+          push: false
+          tags: ${{ env.SERVICE_NAME }}:scan
+
+      - name: Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.SERVICE_NAME }}:scan
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
+      - name: Authenticate to Google Cloud (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Push scanned image to Artifact Registry
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/orders-service
+          push: true
+          tags: |
+            ${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:latest
+            ${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        env:
+          ORDERS_DB_URL: ${{ secrets.ORDERS_DB_URL }}
+          ORDERS_DB_USER: ${{ secrets.ORDERS_DB_USER }}
+          ORDERS_DB_PASSWORD: ${{ secrets.ORDERS_DB_PASSWORD }}
+        run: |
+          CATALOG_URL=$(gcloud run services describe catalog-service --region="${REGION}" --format="value(status.url)")
+          INVENTORY_URL=$(gcloud run services describe inventory-service --region="${REGION}" --format="value(status.url)")
+          if [ -z "${CATALOG_URL}" ] || [ -z "${INVENTORY_URL}" ]; then
+            echo "ERROR: catalog-service and inventory-service must be deployed first."
+            exit 1
+          fi
+
+          IMAGE="${REGION}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${AR_REPO}/${SERVICE_NAME}:${{ github.sha }}"
+          gcloud run deploy "${SERVICE_NAME}" \
+            --image="${IMAGE}" \
+            --region="${REGION}" \
+            --platform=managed \
+            --allow-unauthenticated \
+            --memory=512Mi \
+            --cpu=1 \
+            --cpu-boost \
+            --min-instances=0 \
+            --max-instances=2 \
+            --set-env-vars="^|^ORDERS_DB_URL=${ORDERS_DB_URL}|ORDERS_DB_USER=${ORDERS_DB_USER}|ORDERS_DB_PASSWORD=${ORDERS_DB_PASSWORD}|CATALOG_SERVICE_URL=${CATALOG_URL}|INVENTORY_SERVICE_URL=${INVENTORY_URL}"
+
+          SERVICE_URL=$(gcloud run services describe "${SERVICE_NAME}" --region="${REGION}" --format="value(status.url)")
+          echo "Orders Service URL: ${SERVICE_URL}"
+          curl -fsS "${SERVICE_URL}/q/health/ready"
