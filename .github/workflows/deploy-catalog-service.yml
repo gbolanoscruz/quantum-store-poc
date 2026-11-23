@@ -10,110 +10,82 @@ on:
 
 permissions:
   contents: read
-  packages: write
+  id-token: write
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: gbolanoscruz/quantum-store-poc/catalog-service
+  REGION: us-central1
+  SERVICE_NAME: catalog-service
+  AR_REPO: quantum-store
 
 jobs:
-  build-scan-push:
-    name: Build, Scan & Push to GHCR
+  build-scan-deploy:
+    name: Build, Scan & Deploy to Cloud Run
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@v3
 
       - name: Build image locally for security scan
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v6
         with:
           context: ./services/catalog-service
           load: true
           push: false
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:scan
+          tags: ${{ env.SERVICE_NAME }}:scan
 
       - name: Scan Docker image with Trivy
-        # Si VS Code marca error en el tag, usa exactamente el mismo de tu security-scan.yml
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:scan
+          image-ref: ${{ env.SERVICE_NAME }}:scan
           format: table
           exit-code: "1"
           ignore-unfixed: true
           vuln-type: os,library
           severity: CRITICAL,HIGH
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v4
+      - name: Authenticate to Google Cloud (OIDC)
+        uses: google-github-actions/auth@v2
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
 
-      - name: Push scanned image to GHCR
-        uses: docker/build-push-action@v7
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Push scanned image to Artifact Registry
+        uses: docker/build-push-action@v6
         with:
           context: ./services/catalog-service
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:latest
+            ${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
 
-  deploy-oci:
-    name: Deploy to Oracle Cloud
-    needs: build-scan-push
-    runs-on: ubuntu-latest
-    concurrency:
-      group: oci-deploy
-      cancel-in-progress: false
-      queue: max
-    steps:
-      - name: Pull & restart container via SSH
-        uses: appleboy/ssh-action@v1.2.5
+      - name: Deploy to Cloud Run
         env:
-          GHCR_USER: ${{ github.actor }}
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           CATALOG_DB_URL: ${{ secrets.CATALOG_DB_URL }}
           CATALOG_DB_USER: ${{ secrets.CATALOG_DB_USER }}
           CATALOG_DB_PASSWORD: ${{ secrets.CATALOG_DB_PASSWORD }}
-        with:
-          host: ${{ secrets.OCI_HOST }}
-          username: ${{ secrets.OCI_USER }}
-          key: ${{ secrets.OCI_SSH_KEY }}
-          command_timeout: 4m
-          envs: GHCR_USER,GHCR_TOKEN,IMAGE,CATALOG_DB_URL,CATALOG_DB_USER,CATALOG_DB_PASSWORD
-          script: |
-            set -e
-            echo ">>> Stopping old catalog-service to free RAM..."
-            docker stop catalog-service || true
-            docker rm catalog-service || true
-            echo ">>> Logging in & pulling image..."
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-            docker pull "$IMAGE"
-            docker logout ghcr.io
-            docker network create quantum-net || true
-            echo ">>> Starting catalog-service..."
-            docker run -d \
-              --name catalog-service \
-              --network quantum-net \
-              --restart unless-stopped \
-              --memory="256m" \
-              -p 127.0.0.1:8081:8081 \
-              -e CATALOG_DB_URL="$CATALOG_DB_URL" \
-              -e CATALOG_DB_USER="$CATALOG_DB_USER" \
-              -e CATALOG_DB_PASSWORD="$CATALOG_DB_PASSWORD" \
-              "$IMAGE"
-            docker image prune -f
-            for i in $(seq 1 12); do
-              if curl -fsS http://localhost:8081/q/health/ready; then
-                exit 0
-              fi
-              echo "Waiting for catalog-service ($i/12)..."
-              sleep 5
-            done
-            docker logs catalog-service --tail 30
-            exit 1
+        run: |
+          IMAGE="${REGION}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${AR_REPO}/${SERVICE_NAME}:${{ github.sha }}"
+          gcloud run deploy "${SERVICE_NAME}" \
+            --image="${IMAGE}" \
+            --region="${REGION}" \
+            --platform=managed \
+            --allow-unauthenticated \
+            --memory=512Mi \
+            --cpu=1 \
+            --cpu-boost \
+            --min-instances=0 \
+            --max-instances=2 \
+            --set-env-vars="^|^CATALOG_DB_URL=${CATALOG_DB_URL}|CATALOG_DB_USER=${CATALOG_DB_USER}|CATALOG_DB_PASSWORD=${CATALOG_DB_PASSWORD}"
+
+          SERVICE_URL=$(gcloud run services describe "${SERVICE_NAME}" --region="${REGION}" --format="value(status.url)")
+          echo "Catalog Service URL: ${SERVICE_URL}"
+          curl -fsS "${SERVICE_URL}/q/health/ready"
