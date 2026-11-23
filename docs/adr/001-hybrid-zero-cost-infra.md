@@ -1,6 +1,6 @@
 # ADR-001: Hybrid Zero-Cost Cloud Infrastructure (Cloudflare + Oracle Cloud Always Free)
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-004](004-migrate-backend-to-cloud-run.md) *(OCI compute replaced by Google Cloud Run; Cloudflare Workers retained)*
 - **Date:** 2026-11-22
 - **Deciders:** `@gbolanoscruz`
 
