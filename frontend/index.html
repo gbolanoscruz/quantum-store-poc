@@ -28,7 +28,7 @@
       padding: 2rem 1rem;
     }
 
-    .container { max-width: 1100px; margin: 0 auto; }
+    .container { max-width: 1140px; margin: 0 auto; }
 
     header {
       display: flex;
@@ -38,10 +38,11 @@
       gap: 1rem;
       padding-bottom: 1.5rem;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
     }
 
     h1 { font-size: 1.75rem; letter-spacing: -0.02em; }
+    h2 { font-size: 1.2rem; letter-spacing: -0.01em; }
     .subtitle { color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem; }
 
     .status-group {
@@ -70,6 +71,34 @@
     .dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
     .dot.offline { background: var(--danger); }
 
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.85rem 1.15rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .toolbar-field {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .toolbar-field input {
+      width: 260px;
+      padding: 0.45rem 0.7rem;
+      font-size: 0.85rem;
+    }
+
     .layout {
       display: grid;
       grid-template-columns: 1fr 320px;
@@ -77,8 +106,14 @@
       align-items: start;
     }
 
-    @media (max-width: 860px) {
+    @media (max-width: 880px) {
       .layout { grid-template-columns: 1fr; }
+    }
+
+    .main-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
     }
 
     .grid {
@@ -114,29 +149,29 @@
       border-radius: 6px;
     }
 
-    .stock-badge {
+    .badge {
       font-size: 0.75rem;
       font-weight: 600;
       padding: 0.2rem 0.55rem;
       border-radius: 999px;
       border: 1px solid var(--border);
     }
-    .stock-ok {
+    .badge-ok {
       color: var(--success);
       background: rgba(52, 211, 153, 0.1);
       border-color: rgba(52, 211, 153, 0.3);
     }
-    .stock-low {
+    .badge-low {
       color: var(--warning);
       background: rgba(251, 191, 36, 0.1);
       border-color: rgba(251, 191, 36, 0.3);
     }
-    .stock-out {
+    .badge-out {
       color: var(--danger);
       background: rgba(248, 113, 113, 0.1);
       border-color: rgba(248, 113, 113, 0.3);
     }
-    .stock-none {
+    .badge-none {
       color: var(--muted);
       background: rgba(148, 163, 184, 0.08);
     }
@@ -160,6 +195,19 @@
     .stock-actions {
       display: flex;
       gap: 0.35rem;
+    }
+
+    .order-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .qty-input {
+      width: 64px;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.85rem;
+      text-align: center;
     }
 
     .card-footer {
@@ -186,6 +234,15 @@
 
     .btn-primary { background: var(--accent); color: #082f49; width: 100%; }
     .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+    .btn-order {
+      background: var(--success);
+      color: #052e16;
+      flex: 1;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.82rem;
+    }
+    .btn-order:hover:not(:disabled) { opacity: 0.9; }
 
     .btn-subtle {
       background: rgba(56, 189, 248, 0.12);
@@ -231,10 +288,60 @@
     .feedback.error { color: var(--danger); }
     .feedback.ok { color: var(--success); }
 
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.85rem;
+    }
+
+    .orders-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .order-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.15rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .order-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .order-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      font-weight: 600;
+    }
+
+    .order-sub {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .order-right {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
     .empty {
       grid-column: 1 / -1;
       text-align: center;
-      padding: 3rem 1rem;
+      padding: 2.5rem 1rem;
       color: var(--muted);
       border: 1px dashed var(--border);
       border-radius: 12px;
@@ -257,14 +364,40 @@
           <span id="inventory-dot" class="dot"></span>
           <span id="inventory-status">Inventory: connecting...</span>
         </div>
+        <div class="status-badge">
+          <span id="orders-dot" class="dot"></span>
+          <span id="orders-status">Orders: connecting...</span>
+        </div>
       </div>
     </header>
 
+    <div class="toolbar">
+      <div class="toolbar-field">
+        <span>Customer Email for Orders:</span>
+        <input id="customer-email" type="email" value="buyer@quantumstore.dev" placeholder="you@example.com" />
+      </div>
+      <div id="order-feedback" class="feedback"></div>
+    </div>
+
     <div class="layout">
-      <main>
-        <div id="products-grid" class="grid">
-          <div class="empty">Loading catalog &amp; live inventory from Google Cloud Run...</div>
-        </div>
+      <main class="main-stack">
+        <section>
+          <div class="section-header">
+            <h2>Catalog &amp; Live Stock</h2>
+          </div>
+          <div id="products-grid" class="grid">
+            <div class="empty">Loading catalog &amp; live inventory from Google Cloud Run...</div>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-header">
+            <h2>Recent Orders</h2>
+          </div>
+          <div id="orders-list" class="orders-list">
+            <div class="empty">Loading orders from orders-service...</div>
+          </div>
+        </section>
       </main>
 
       <aside class="card">
@@ -300,12 +433,18 @@
   <script>
     const CATALOG_API = "https://catalog-service-hlbrzrqapa-uc.a.run.app/api/catalog/products";
     const INVENTORY_API = "https://inventory-service-hlbrzrqapa-uc.a.run.app/api/inventory";
+    const ORDERS_API = "https://orders-service-hlbrzrqapa-uc.a.run.app/api/orders";
 
     const grid = document.getElementById("products-grid");
+    const ordersList = document.getElementById("orders-list");
     const catalogDot = document.getElementById("catalog-dot");
     const catalogStatus = document.getElementById("catalog-status");
     const inventoryDot = document.getElementById("inventory-dot");
     const inventoryStatus = document.getElementById("inventory-status");
+    const ordersDot = document.getElementById("orders-dot");
+    const ordersStatus = document.getElementById("orders-status");
+    const customerEmailInput = document.getElementById("customer-email");
+    const orderFeedback = document.getElementById("order-feedback");
     const form = document.getElementById("product-form");
     const submitBtn = document.getElementById("submit-btn");
     const feedback = document.getElementById("form-feedback");
@@ -315,22 +454,27 @@
       textEl.textContent = message;
     }
 
+    function setOrderFeedback(type, message) {
+      orderFeedback.className = "feedback" + (type ? " " + type : "");
+      orderFeedback.textContent = message;
+    }
+
     function createStockBadge(stockItem) {
       const badge = document.createElement("span");
-      badge.className = "stock-badge ";
+      badge.className = "badge ";
       if (!stockItem) {
-        badge.className += "stock-none";
+        badge.className += "badge-none";
         badge.textContent = "No stock record";
         return badge;
       }
       if (stockItem.availableQuantity === 0) {
-        badge.className += "stock-out";
+        badge.className += "badge-out";
         badge.textContent = "Out of stock";
       } else if (stockItem.availableQuantity <= 5) {
-        badge.className += "stock-low";
+        badge.className += "badge-low";
         badge.textContent = `Low stock: ${stockItem.availableQuantity}`;
       } else {
-        badge.className += "stock-ok";
+        badge.className += "badge-ok";
         badge.textContent = `In stock: ${stockItem.availableQuantity}`;
       }
       return badge;
@@ -359,11 +503,9 @@
       stockRow.className = "stock-controls";
 
       const reservedText = document.createElement("span");
-      if (stockItem) {
-        reservedText.textContent = `Reserved: ${stockItem.reservedQuantity}`;
-      } else {
-        reservedText.textContent = "Stock uninitialized";
-      }
+      reservedText.textContent = stockItem
+        ? `Reserved: ${stockItem.reservedQuantity}`
+        : "Stock uninitialized";
 
       const actions = document.createElement("div");
       actions.className = "stock-actions";
@@ -372,14 +514,16 @@
         const reserveBtn = document.createElement("button");
         reserveBtn.className = "btn-subtle";
         reserveBtn.type = "button";
-        reserveBtn.textContent = "Reserve 1";
+        reserveBtn.textContent = "+1 Res";
+        reserveBtn.title = "Reserve 1 unit directly in inventory-service";
         reserveBtn.disabled = stockItem.availableQuantity < 1;
         reserveBtn.addEventListener("click", () => updateReservation(product.sku, "reserve", reserveBtn));
 
         const releaseBtn = document.createElement("button");
         releaseBtn.className = "btn-subtle";
         releaseBtn.type = "button";
-        releaseBtn.textContent = "Release 1";
+        releaseBtn.textContent = "-1 Rel";
+        releaseBtn.title = "Release 1 unit directly in inventory-service";
         releaseBtn.disabled = stockItem.reservedQuantity < 1;
         releaseBtn.addEventListener("click", () => updateReservation(product.sku, "release", releaseBtn));
 
@@ -395,6 +539,26 @@
 
       stockRow.append(reservedText, actions);
 
+      const orderRow = document.createElement("div");
+      orderRow.className = "order-row";
+
+      const qtyInput = document.createElement("input");
+      qtyInput.className = "qty-input";
+      qtyInput.type = "number";
+      qtyInput.min = "1";
+      qtyInput.max = stockItem ? String(Math.max(1, stockItem.availableQuantity)) : "1";
+      qtyInput.value = "1";
+      qtyInput.disabled = !stockItem || stockItem.availableQuantity < 1;
+
+      const orderBtn = document.createElement("button");
+      orderBtn.className = "btn-order";
+      orderBtn.type = "button";
+      orderBtn.textContent = "Place Order";
+      orderBtn.disabled = !stockItem || stockItem.availableQuantity < 1;
+      orderBtn.addEventListener("click", () => placeOrder(product.id, Number(qtyInput.value), orderBtn));
+
+      orderRow.append(qtyInput, orderBtn);
+
       const footer = document.createElement("div");
       footer.className = "card-footer";
 
@@ -409,17 +573,72 @@
       delBtn.addEventListener("click", () => deleteProduct(product.id, delBtn));
 
       footer.append(price, delBtn);
-      card.append(top, title, desc, stockRow, footer);
+      card.append(top, title, desc, stockRow, orderRow, footer);
       return card;
     }
 
+    function createOrderRow(order) {
+      const row = document.createElement("div");
+      row.className = "order-item";
+
+      const meta = document.createElement("div");
+      meta.className = "order-meta";
+
+      const title = document.createElement("div");
+      title.className = "order-title";
+
+      const idSpan = document.createElement("span");
+      idSpan.textContent = `Order #${order.id}`;
+
+      const skuSpan = document.createElement("span");
+      skuSpan.className = "sku";
+      skuSpan.textContent = order.sku;
+
+      const statusBadge = document.createElement("span");
+      statusBadge.className = "badge " + (order.status === "CONFIRMED" ? "badge-ok" : "badge-out");
+      statusBadge.textContent = order.status;
+
+      title.append(idSpan, skuSpan, statusBadge);
+
+      const sub = document.createElement("div");
+      sub.className = "order-sub";
+      sub.textContent = `${order.productName} × ${order.quantity} ($${Number(order.unitPrice).toFixed(2)} ea) • ${order.customerEmail}`;
+
+      meta.append(title, sub);
+
+      const right = document.createElement("div");
+      right.className = "order-right";
+
+      const total = document.createElement("span");
+      total.className = "price";
+      total.textContent = `$${Number(order.totalAmount).toFixed(2)}`;
+
+      right.append(total);
+
+      if (order.status === "CONFIRMED") {
+        const cancelBtn = document.createElement("button");
+        cancelBtn.className = "btn-danger";
+        cancelBtn.type = "button";
+        cancelBtn.textContent = "Cancel";
+        cancelBtn.addEventListener("click", () => cancelOrder(order.id, cancelBtn));
+        right.append(cancelBtn);
+      }
+
+      row.append(meta, right);
+      return row;
+    }
+
     async function loadStorefront() {
-      const [catalogResult, inventoryResult] = await Promise.allSettled([
+      const [catalogResult, inventoryResult, ordersResult] = await Promise.allSettled([
         fetch(CATALOG_API).then((r) => {
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           return r.json();
         }),
         fetch(INVENTORY_API).then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        }),
+        fetch(ORDERS_API).then((r) => {
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           return r.json();
         })
@@ -440,22 +659,101 @@
         empty.className = "empty";
         empty.textContent = `Could not load catalog: ${catalogResult.reason.message}`;
         grid.appendChild(empty);
-        return;
+      } else {
+        const products = catalogResult.value;
+        setBadge(catalogDot, catalogStatus, true, `Catalog: Online (${products.length} items)`);
+        grid.replaceChildren();
+
+        if (products.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "No active products found. Add one using the form.";
+          grid.appendChild(empty);
+        } else {
+          products.forEach((p) => grid.appendChild(createProductCard(p, inventoryBySku.get(p.sku))));
+        }
       }
 
-      const products = catalogResult.value;
-      setBadge(catalogDot, catalogStatus, true, `Catalog: Online (${products.length} items)`);
-      grid.replaceChildren();
-
-      if (products.length === 0) {
+      if (ordersResult.status === "rejected") {
+        setBadge(ordersDot, ordersStatus, false, "Orders: Unreachable");
+        ordersList.replaceChildren();
         const empty = document.createElement("div");
         empty.className = "empty";
-        empty.textContent = "No active products found. Add one using the form.";
-        grid.appendChild(empty);
+        empty.textContent = `Could not load orders: ${ordersResult.reason.message}`;
+        ordersList.appendChild(empty);
+      } else {
+        const orders = ordersResult.value;
+        setBadge(ordersDot, ordersStatus, true, `Orders: Online (${orders.length})`);
+        ordersList.replaceChildren();
+
+        if (orders.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "No orders yet. Click 'Place Order' on any in-stock product.";
+          ordersList.appendChild(empty);
+        } else {
+          orders.forEach((o) => ordersList.appendChild(createOrderRow(o)));
+        }
+      }
+    }
+
+    async function placeOrder(productId, quantity, btn) {
+      const customerEmail = customerEmailInput.value.trim();
+      if (!customerEmail || !customerEmail.includes("@")) {
+        setOrderFeedback("error", "Please enter a valid customer email first.");
+        customerEmailInput.focus();
+        return;
+      }
+      if (!Number.isInteger(quantity) || quantity < 1) {
+        setOrderFeedback("error", "Quantity must be at least 1.");
         return;
       }
 
-      products.forEach((p) => grid.appendChild(createProductCard(p, inventoryBySku.get(p.sku))));
+      btn.disabled = true;
+      btn.textContent = "Ordering...";
+      setOrderFeedback("", "Orchestrating Catalog → Inventory → Orders...");
+
+      try {
+        const res = await fetch(ORDERS_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ customerEmail, productId, quantity })
+        });
+        if (!res.ok) {
+          const msg = await res.text();
+          throw new Error(msg || `HTTP ${res.status}`);
+        }
+        const created = await res.json();
+        setOrderFeedback("ok", `Order #${created.id} confirmed ($${Number(created.totalAmount).toFixed(2)})!`);
+        await loadStorefront();
+      } catch (err) {
+        setOrderFeedback("error", `Order failed: ${err.message}`);
+        btn.disabled = false;
+        btn.textContent = "Place Order";
+      }
+    }
+
+    async function cancelOrder(orderId, btn) {
+      btn.disabled = true;
+      btn.textContent = "Cancelling...";
+      setOrderFeedback("", `Cancelling Order #${orderId} and releasing stock...`);
+
+      try {
+        const res = await fetch(`${ORDERS_API}/${orderId}/cancel`, {
+          method: "POST",
+          body: ""
+        });
+        if (!res.ok) {
+          const msg = await res.text();
+          throw new Error(msg || `HTTP ${res.status}`);
+        }
+        setOrderFeedback("ok", `Order #${orderId} cancelled — stock released back to inventory.`);
+        await loadStorefront();
+      } catch (err) {
+        setOrderFeedback("error", `Cancel failed: ${err.message}`);
+        btn.disabled = false;
+        btn.textContent = "Cancel";
+      }
     }
 
     async function updateReservation(sku, action, btn) {
@@ -469,7 +767,7 @@
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         await loadStorefront();
       } catch (err) {
-        alert(`Failed to ${action} stock: ${err.message}`);
+        setOrderFeedback("error", `Failed to ${action} stock: ${err.message}`);
         btn.disabled = false;
       }
     }
@@ -485,7 +783,7 @@
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         await loadStorefront();
       } catch (err) {
-        alert(`Failed to initialize stock: ${err.message}`);
+        setOrderFeedback("error", `Failed to initialize stock: ${err.message}`);
         btn.disabled = false;
       }
     }
@@ -500,7 +798,7 @@
       } catch (err) {
         btn.disabled = false;
         btn.textContent = "Delete";
-        alert(`Failed to delete product: ${err.message}`);
+        setOrderFeedback("error", `Failed to delete product: ${err.message}`);
       }
     }
 
