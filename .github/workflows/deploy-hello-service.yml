@@ -65,6 +65,10 @@ jobs:
     name: Deploy to Oracle Cloud
     needs: build-scan-push
     runs-on: ubuntu-latest
+    concurrency:
+      group: oci-deploy
+      cancel-in-progress: false
+      queue: max
     steps:
       - name: Pull & restart container via SSH
         uses: appleboy/ssh-action@v1.2.5
@@ -77,8 +81,8 @@ jobs:
           username: ${{ secrets.OCI_USER }}
           key: ${{ secrets.OCI_SSH_KEY }}
           envs: GHCR_USER,GHCR_TOKEN,IMAGE
-          script_stop: true
           script: |
+            set -e
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             docker pull "$IMAGE"
             docker stop hello-service || true
