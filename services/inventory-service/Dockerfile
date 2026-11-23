@@ -7,7 +7,7 @@ COPY src ./src
 RUN mvn -B package -DskipTests
 
 # Stage 2: Lightweight non-root runtime
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:24-jre-alpine
 WORKDIR /work
 RUN addgroup -S quarkus && adduser -S quarkus -G quarkus
 
