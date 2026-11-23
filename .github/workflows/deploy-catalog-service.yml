@@ -88,6 +88,7 @@ jobs:
             docker stop catalog-service || true
             docker rm catalog-service || true
             docker run -d \
+              --network quantum-net \
               --name catalog-service \
               --restart unless-stopped \
               --memory="300m" \
