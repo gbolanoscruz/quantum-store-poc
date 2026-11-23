@@ -1,4 +1,4 @@
-# ADR-003: Standardize Backend Microservices on Quarkus (Java 21 LTS)
+# ADR-003: Standardize Backend Microservices on Quarkus (Java 25 LTS)
 
 - **Status:** Accepted *(Validated in production with `catalog-service` and `inventory-service`)*
 - **Date:** 2026-11-22 *(Updated 2026-11-23 to align with [ADR-004](004-migrate-backend-to-cloud-run.md))*
@@ -14,9 +14,9 @@ The backend framework must satisfy two core requirements:
 
 ## Decision
 
-Standardize 100% of backend microservices on **Quarkus 3.40 LTS** running on **Java 21 LTS** (Maven):
+Standardize 100% of backend microservices on **Quarkus 3.40 LTS** running on **Java 25 LTS** (Maven), upgrading the prior Java 21 baseline:
 
-- **Runtime & Hardening Strategy:** Run **Quarkus Fast-JAR (JVM mode)** on Alpine JRE (`eclipse-temurin:21-jre-alpine`) with build-time OS patching (`apk update && apk upgrade --no-cache` for Trivy compliance), a non-root `quarkus` runtime user, dynamic port binding (`quarkus.http.port=${PORT:808x}`), and 512 MiB Cloud Run containers (`-XX:MaxRAMPercentage=75.0`), keeping the door open to **GraalVM native executables** if sub-second cold starts become necessary.
+- **Runtime & Hardening Strategy:** Run **Quarkus Fast-JAR (JVM mode)** on Alpine JRE (`eclipse-temurin:25-jre-alpine`) with build-time OS patching (`apk update && apk upgrade --no-cache` for Trivy compliance), a non-root `quarkus` runtime user, dynamic port binding (`quarkus.http.port=${PORT:808x}`), and 512 MiB Cloud Run containers (`-XX:MaxRAMPercentage=75.0`), keeping the door open to **GraalVM native executables** if sub-second cold starts become necessary.
 - **Core Extensions:**
   - `quarkus-rest-jackson` (REST endpoints + JSON serialization)
   - `quarkus-rest-client-jackson` (typed inter-service HTTP calls using Cloud Run HTTPS URLs injected at deploy time, e.g., `CATALOG_SERVICE_URL`)

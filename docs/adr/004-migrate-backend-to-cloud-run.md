@@ -26,7 +26,7 @@ Migrate all backend microservices to **Google Cloud Run** (`us-central1`, Tier 1
 - **Keyless CI/CD (OIDC):** GitHub Actions authenticates to GCP using **Workload Identity Federation (WIF)** with least-privilege IAM roles (`roles/run.admin`, `roles/artifactregistry.writer`, `roles/iam.serviceAccountUser`) — zero static SSH keys or exported JSON service account keys.
 - **Artifact Registry Hygiene:** A cleanup policy retains only the **latest 2 image versions per service** to remain strictly within the 0.5 GB Always Free storage tier.
 - **Service Discovery:** `inventory-service` resolves the live HTTPS URL of `catalog-service` dynamically during CD (`gcloud run services describe`) and injects it via `CATALOG_SERVICE_URL` into the Quarkus REST Client.
-- **Unchanged Components:** **Neon Serverless PostgreSQL** (*Database-per-Service*), **Cloudflare Workers** (static storefront), **Quarkus 3.40 LTS (Java 21)**, and **Trivy/CodeQL/Dependabot** remain unchanged.
+- **Unchanged Components:** **Neon Serverless PostgreSQL** (*Database-per-Service*), **Cloudflare Workers** (static storefront), **Quarkus 3.40 LTS (Java 25 LTS)**, and **Trivy/CodeQL/Dependabot** remain unchanged.
 
 ## Alternatives Considered
 

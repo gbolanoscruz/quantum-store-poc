@@ -1,14 +1,14 @@
 # Quantum Store PoC
 
-Event-driven e-commerce Proof of Concept built with **Quarkus (Java 21)** microservices, a cloud-native web frontend, DevSecOps guardrails, and a **$0 serverless cloud architecture**.
+Event-driven e-commerce Proof of Concept built with **Quarkus (Java 25 LTS)** microservices, a cloud-native web frontend, DevSecOps guardrails, and a **$0 serverless cloud architecture**.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     User([Browser]) -->|HTTPS| CF[Cloudflare Workers<br/>Storefront Frontend]
-    User -->|HTTPS / API Calls| Catalog[catalog-service<br/>Cloud Run · 512Mi · Java 21]
-    User -->|HTTPS / API Calls| Inventory[inventory-service<br/>Cloud Run · 512Mi · Java 21]
+    User -->|HTTPS / API Calls| Catalog[catalog-service<br/>Cloud Run · 512Mi · Java 25]
+    User -->|HTTPS / API Calls| Inventory[inventory-service<br/>Cloud Run · 512Mi · Java 25]
 
     subgraph GCP [Google Cloud Run — us-central1 Always Free]
         Inventory -.->|Quarkus REST Client<br/>HTTPS| Catalog
@@ -33,7 +33,7 @@ flowchart LR
 | Layer | Technology | Hosting / Cost |
 | :--- | :--- | :--- |
 | **Frontend** | Static HTML/JS *(Live catalog & inventory controls)* | Cloudflare Workers ($0) |
-| **Backend** | Quarkus 3.40 LTS, Java 21, Panache, Flyway, REST Client, SmallRye Health/OpenAPI | Google Cloud Run — `us-central1` Always Free ($0) |
+| **Backend** | Quarkus 3.40 LTS, Java 25 LTS, Panache, Flyway, REST Client, SmallRye Health/OpenAPI | Google Cloud Run — `us-central1` Always Free ($0) |
 | **Container Registry** | Docker images *(cleanup policy: keep latest 2 versions)* | Google Artifact Registry — 0.5 GB Free Tier ($0) |
 | **Databases** | PostgreSQL (*Database-per-Service*: `catalog_db`, `inventory_db`) | Neon Serverless ($0) |
 | **CI/CD & Security** | GitHub Actions, OIDC (Workload Identity Federation), Trivy, CodeQL, Dependabot | GitHub ($0) |
@@ -42,7 +42,7 @@ flowchart LR
 - **Branch Protection:** GitHub Rulesets enforced on `main` (Pull Request required, direct pushes blocked).
 - **Keyless Cloud Auth:** **Workload Identity Federation (OIDC)** authenticates GitHub Actions to GCP with short-lived tokens — zero static SSH keys or JSON service account keys.
 - **Vulnerability Scanning:** Automated **Trivy** filesystem & container image scans (`CRITICAL`/`HIGH`) blocking merges and Artifact Registry pushes.
-- **Hardened Containers:** Multi-stage Alpine builds (`eclipse-temurin:21-jre-alpine`), build-time `apk upgrade --no-cache` patching, and non-root `quarkus` runtime user.
+- **Hardened Containers:** Multi-stage Alpine builds (`eclipse-temurin:25-jre-alpine`), build-time `apk upgrade --no-cache` patching, and non-root `quarkus` runtime user.
 - **SAST & Dependency Hygiene:** **CodeQL** (Actions + Java) and **Dependabot** (`github-actions`, `maven`, `docker` across `/services/*`).
 - **Managed TLS & Cost Guardrails:** Native Cloud Run HTTPS, scale-to-zero (`--min-instances=0`), `--max-instances=2`, Artifact Registry retention policy, and a $1 USD GCP billing alert.
 
@@ -63,7 +63,7 @@ flowchart LR
 - [Security Policy](SECURITY.md) — Active DevSecOps controls and vulnerability reporting process.
 - [ADR-001: Hybrid Zero-Cost Infrastructure](docs/adr/001-hybrid-zero-cost-infra.md) *(Superseded by ADR-004)*
 - [ADR-002: Fixed HTTPS with DuckDNS & Caddy](docs/adr/002-fixed-https-duckdns-caddy.md) *(Superseded by ADR-004)*
-- [ADR-003: Standardize Backend Microservices on Quarkus (Java 21 LTS)](docs/adr/003-microservices-stack-quarkus.md)
+- [ADR-003: Standardize Backend Microservices on Quarkus (Java 25 LTS)](docs/adr/003-microservices-stack-quarkus.md)
 - [ADR-004: Migrate Backend Microservices to Google Cloud Run](docs/adr/004-migrate-backend-to-cloud-run.md)
 
 ## Roadmap

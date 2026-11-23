@@ -18,10 +18,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         
-      - name: Set up JDK 21 with Maven cache
+      - name: Set up JDK 25 with Maven cache
         uses: actions/setup-java@v6
         with:
-          java-version: "21"
+          java-version: "25"
           distribution: "temurin"
           cache: "maven"
           cache-dependency-path: "services/*/pom.xml"
