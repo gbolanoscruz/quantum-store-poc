@@ -65,6 +65,10 @@ jobs:
     name: Deploy to Oracle Cloud
     needs: build-scan-push
     runs-on: ubuntu-latest
+    concurrency:
+      group: oci-deploy
+      cancel-in-progress: false
+      queue: max
     steps:
       - name: Pull & restart container via SSH
         uses: appleboy/ssh-action@v1.2.5

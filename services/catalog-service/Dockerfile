@@ -9,7 +9,8 @@ RUN mvn -B package -DskipTests
 # Stage 2: Lightweight non-root runtime
 FROM eclipse-temurin:24-jre-alpine
 WORKDIR /work
-RUN addgroup -S quarkus && adduser -S quarkus -G quarkus
+RUN apk update && apk upgrade --no-cache && \
+    addgroup -S quarkus && adduser -S quarkus -G quarkus
 
 COPY --from=build --chown=quarkus:quarkus /app/target/quarkus-app/lib/ /work/lib/
 COPY --from=build --chown=quarkus:quarkus /app/target/quarkus-app/*.jar /work/
