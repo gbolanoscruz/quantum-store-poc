@@ -24,11 +24,12 @@ jobs:
           java-version: "21"
           distribution: "temurin"
           cache: "maven"
-          cache-dependency-path: "services/catalog-service/pom.xml"
+          cache-dependency-path: "services/*/pom.xml"
 
       - name: Resolve Maven dependencies for Trivy
-        working-directory: services/catalog-service
-        run: mvn -B dependency:resolve
+        run: |
+          mvn -B -f services/catalog-service/pom.xml dependency:resolve
+          mvn -B -f services/inventory-service/pom.xml dependency:resolve
 
       - name: Run Trivy vulnerability scanner in repo mode
         uses: aquasecurity/trivy-action@master

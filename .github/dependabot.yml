@@ -1,6 +1,5 @@
 version: 2
 updates:
-  # Mantener actualizadas las GitHub Actions (evita avisos de deprecación como Node 20 / CodeQL v3)
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -13,21 +12,9 @@ updates:
       - "dependencies"
       - "github-actions"
 
-  # Mantener actualizada la imagen base de Java en hello-service (Eclipse Temurin Alpine)
-  - package-ecosystem: "docker"
-    directory: "/services/hello-service"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 3
-    commit-message:
-      prefix: "chore(deps)"
-    labels:
-      - "dependencies"
-      - "docker"
-
   - package-ecosystem: "maven"
-    directory: "/services/catalog-service"
+    directories:
+      - "/services/*"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -39,11 +26,12 @@ updates:
       - "java"
 
   - package-ecosystem: "docker"
-    directory: "/services/catalog-service"
+    directories:
+      - "/services/*"
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(deps)"
     labels:
