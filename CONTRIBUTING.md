@@ -45,10 +45,11 @@ All backend services live under `services/<service-name>/` and must adhere to th
 
 - **Runtime & Framework:** **Quarkus LTS** on **Java 21** (Maven) with `quarkus-smallrye-health` (`/q/health/ready`) and `quarkus-smallrye-openapi`.
 - **Database-per-Service:** Each stateful service uses its own isolated Neon PostgreSQL database (`<service>_db`), managed strictly via **Flyway** migrations (`src/main/resources/db/migration/V*__*.sql`). Never share tables or foreign keys across services.
-- **Inter-Service Communication:** Use **Quarkus REST Client** over the internal Docker network (`quantum-net`) rather than routing internal calls through the public internet.
-- **Hardened Containers:** Use multi-stage Alpine Dockerfiles (`eclipse-temurin:21-jre-alpine`), run `apk update && apk upgrade --no-cache`, execute as a non-root `quarkus` user, and set explicit memory limits (`--memory="256m"`, `-XX:MaxRAMPercentage=75.0`).
-- **CI/CD & Concurrency:**
-  - Add a dedicated `.github/workflows/deploy-<service>.yml` workflow that uses the shared `oci-deploy` concurrency group (`cancel-in-progress: false`, `queue: max`) and stops the previous container before `docker pull` to protect the 1 GB RAM OCI VM.
+- **Dynamic Port Binding:** Bind HTTP to `quarkus.http.port=${PORT:808x}` for Cloud Run compatibility.
+- **Inter-Service Communication:** Use **Quarkus REST Client** with upstream Cloud Run HTTPS URLs injected via environment variables at deploy time (e.g., `CATALOG_SERVICE_URL`).
+- **Hardened Containers:** Use multi-stage Alpine Dockerfiles (`eclipse-temurin:21-jre-alpine`), run `apk update && apk upgrade --no-cache`, and execute as a non-root `quarkus` user.
+- **CI/CD & Keyless Auth:**
+  - Add a dedicated `.github/workflows/deploy-<service>.yml` workflow using Trivy, **Workload Identity Federation (OIDC)** (`permissions: id-token: write`), Artifact Registry, and `gcloud run deploy` (`--memory=512Mi`, `--cpu-boost`, `--min-instances=0`, `--max-instances=2`).
   - Register the new `pom.xml` in `.github/workflows/security-scan.yml` for Maven dependency resolution. *(Dependabot automatically monitors `/services/*` for Maven and Docker).*
 
 ---

@@ -1,6 +1,6 @@
 # ADR-002: Fixed HTTPS Endpoint with DuckDNS and Caddy Reverse Proxy
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-004](004-migrate-backend-to-cloud-run.md) *(replaced by Cloud Run managed HTTPS)*
 - **Date:** 2026-11-22
 - **Deciders:** `@gbolanoscruz`
 
