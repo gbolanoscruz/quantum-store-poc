@@ -118,6 +118,7 @@ public class OrderResource {
 
     @POST
     @Path("/{id}/cancel")
+    @Consumes(MediaType.WILDCARD)
     @Transactional
     public Response cancelOrder(@PathParam("id") Long id) {
         Order order = Order.findById(id);
