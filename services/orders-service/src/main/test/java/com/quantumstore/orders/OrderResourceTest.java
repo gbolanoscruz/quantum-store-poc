@@ -131,4 +131,18 @@ class OrderResourceTest {
             .then()
             .statusCode(409);
     }
+
+    @Test
+    void shouldExposeHealthAndPrometheusMetrics() {
+        given()
+            .when().get("/q/health/ready")
+            .then()
+            .statusCode(200)
+            .body("status", is("UP"));
+
+        given()
+            .when().get("/q/metrics")
+            .then()
+            .statusCode(200);
+    }
 }
