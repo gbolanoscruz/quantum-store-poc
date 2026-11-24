@@ -19,6 +19,12 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Security override: patch CVE-2026-102554 -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>33.7.2-jre</version>
+            </dependency>
             <dependency>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>${quarkus.platform.artifact-id}</artifactId>
