@@ -138,4 +138,30 @@ public class OrderResource {
         order.updatedAt = OffsetDateTime.now();
         return Response.ok(order).build();
     }
+
+    @POST
+    @Path("/{id}/mark-paid")
+    @Consumes(MediaType.WILDCARD)
+    @Transactional
+    public Response markPaid(@PathParam("id") Long id) {
+        Order order = Order.findById(id);
+        if (order == null) {
+            throw new NotFoundException("Order not found: " + id);
+        }
+        if (order.status == OrderStatus.CANCELLED) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity("Cannot pay a cancelled order: " + id)
+                    .build();
+        }
+        if (order.status == OrderStatus.PAID) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity("Order is already paid: " + id)
+                    .build();
+        }
+
+        order.status = OrderStatus.PAID;
+        order.updatedAt = OffsetDateTime.now();
+        return Response.ok(order).build();
+    }
 }
+

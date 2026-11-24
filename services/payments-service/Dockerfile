@@ -1,0 +1,20 @@
+# Stage 1: Build Quarkus Fast-JAR (Java 25)
+FROM maven:3.9-eclipse-temurin-25-alpine AS build
+WORKDIR /app
+COPY pom.xml .
+RUN mvn -B dependency:go-offline
+COPY src ./src
+RUN mvn -B package -DskipTests
+
+# Stage 2: Hardened non-root runtime
+FROM eclipse-temurin:25-jre-alpine
+WORKDIR /work
+RUN apk update && apk upgrade --no-cache && \
+    addgroup -S quarkus && adduser -S quarkus -G quarkus
+COPY --from=build --chown=quarkus:quarkus /app/target/quarkus-app/lib/ /work/lib/
+COPY --from=build --chown=quarkus:quarkus /app/target/quarkus-app/*.jar /work/
+COPY --from=build --chown=quarkus:quarkus /app/target/quarkus-app/app/ /work/app/
+COPY --from=build --chown=quarkus:quarkus /app/target/quarkus-app/quarkus/ /work/quarkus/
+USER quarkus
+EXPOSE 8080
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "/work/quarkus-run.jar"]
