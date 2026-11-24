@@ -1,5 +1,6 @@
 package com.quantumstore.payments;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.panache.common.Sort;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -20,6 +21,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.quarkus.logging.Log;
 
 @Path("/api/payments")
 @Produces(MediaType.APPLICATION_JSON)
@@ -29,6 +32,9 @@ public class PaymentResource {
     @Inject
     @RestClient
     OrdersClient ordersClient;
+
+    @Inject
+    MeterRegistry meterRegistry;
 
     public record CreatePaymentRequest(
             @NotNull Long orderId,
@@ -99,6 +105,8 @@ public class PaymentResource {
         if ("DECLINED".equals(method)) {
             payment.status = PaymentStatus.FAILED;
             payment.persist();
+            meterRegistry.counter("quantum_payments_total", "status", "failed", "method", method).increment();
+            Log.warnf("Payment DECLINED ref=%s orderId=%d amount=%s", payment.transactionRef, order.id(), payment.amount);
             return Response.status(Response.Status.PAYMENT_REQUIRED).entity(payment).build();
         }
 
@@ -107,6 +115,8 @@ public class PaymentResource {
 
         payment.status = PaymentStatus.CAPTURED;
         payment.persist();
+        meterRegistry.counter("quantum_payments_total", "status", "captured", "method", method).increment();
+        Log.infof("Payment CAPTURED ref=%s orderId=%d amount=%s method=%s", payment.transactionRef, order.id(), payment.amount, method);
         return Response.status(Response.Status.CREATED).entity(payment).build();
     }
 
@@ -130,6 +140,8 @@ public class PaymentResource {
 
         payment.status = PaymentStatus.REFUNDED;
         payment.updatedAt = OffsetDateTime.now();
+        meterRegistry.counter("quantum_payments_total", "status", "refunded", "method", payment.paymentMethod).increment();
+        Log.infof("Payment REFUNDED ref=%s orderId=%d (cascaded cancel + stock release)", payment.transactionRef, payment.orderId);
         return Response.ok(payment).build();
     }
 }
