@@ -1,0 +1,97 @@
+name: Build, Scan & Deploy (payments-service)
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "services/payments-service/**"
+      - ".github/workflows/deploy-payments-service.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  REGION: us-central1
+  SERVICE_NAME: payments-service
+  AR_REPO: quantum-store
+
+jobs:
+  build-scan-deploy:
+    name: Build, Scan & Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image locally for security scan
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/payments-service
+          load: true
+          push: false
+          tags: ${{ env.SERVICE_NAME }}:scan
+
+      - name: Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.SERVICE_NAME }}:scan
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
+      - name: Authenticate to Google Cloud (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Push scanned image to Artifact Registry
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/payments-service
+          push: true
+          tags: |
+            ${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:latest
+            ${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        env:
+          PAYMENTS_DB_URL: ${{ secrets.PAYMENTS_DB_URL }}
+          PAYMENTS_DB_USER: ${{ secrets.PAYMENTS_DB_USER }}
+          PAYMENTS_DB_PASSWORD: ${{ secrets.PAYMENTS_DB_PASSWORD }}
+        run: |
+          ORDERS_URL=$(gcloud run services describe orders-service --region="${REGION}" --format="value(status.url)")
+          if [ -z "${ORDERS_URL}" ]; then
+            echo "ERROR: orders-service must be deployed to Cloud Run first."
+            exit 1
+          fi
+
+          IMAGE="${REGION}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${AR_REPO}/${SERVICE_NAME}:${{ github.sha }}"
+          gcloud run deploy "${SERVICE_NAME}" \
+            --image="${IMAGE}" \
+            --region="${REGION}" \
+            --platform=managed \
+            --allow-unauthenticated \
+            --memory=512Mi \
+            --cpu=1 \
+            --cpu-boost \
+            --min-instances=0 \
+            --max-instances=2 \
+            --set-env-vars="^|^PAYMENTS_DB_URL=${PAYMENTS_DB_URL}|PAYMENTS_DB_USER=${PAYMENTS_DB_USER}|PAYMENTS_DB_PASSWORD=${PAYMENTS_DB_PASSWORD}|ORDERS_SERVICE_URL=${ORDERS_URL}"
+
+          SERVICE_URL=$(gcloud run services describe "${SERVICE_NAME}" --region="${REGION}" --format="value(status.url)")
+          echo "Payments Service URL: ${SERVICE_URL}"
+          curl -fsS "${SERVICE_URL}/q/health/ready"
