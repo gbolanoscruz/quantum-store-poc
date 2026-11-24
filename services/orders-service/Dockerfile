@@ -16,5 +16,5 @@ COPY --from=build --chown=quarkus:quarkus /app/target/quarkus-app/*.jar /work/
 COPY --from=build --chown=quarkus:quarkus /app/target/quarkus-app/app/ /work/app/
 COPY --from=build --chown=quarkus:quarkus /app/target/quarkus-app/quarkus/ /work/quarkus/
 USER quarkus
-EXPOSE 8080
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "/work/quarkus-run.jar"]
+EXPOSE 8083
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-Dquarkus.http.host=0.0.0.0", "-jar", "/work/quarkus-run.jar"]
