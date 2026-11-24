@@ -1,41 +1,52 @@
 # Quantum Store PoC
 
-Event-driven e-commerce Proof of Concept built with **Quarkus (Java 25 LTS)** microservices, a cloud-native web frontend, DevSecOps guardrails, and a **$0 serverless cloud architecture**.
+Cloud-native e-commerce Proof of Concept built with **Quarkus (Java 25 LTS)** microservices, a live web storefront, DevSecOps guardrails, and a **$0 serverless cloud architecture**.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     User([Browser]) -->|HTTPS| CF[Cloudflare Workers<br/>Storefront Frontend]
-    User -->|HTTPS / API Calls| Catalog[catalog-service<br/>Cloud Run · 512Mi · Java 25]
-    User -->|HTTPS / API Calls| Inventory[inventory-service<br/>Cloud Run · 512Mi · Java 25]
+    User -->|HTTPS| Catalog[catalog-service<br/>Cloud Run · 512Mi · Java 25]
+    User -->|HTTPS| Inventory[inventory-service<br/>Cloud Run · 512Mi · Java 25]
+    User -->|HTTPS| Orders[orders-service<br/>Cloud Run · 512Mi · Java 25]
+    User -->|HTTPS| Payments[payments-service<br/>Cloud Run · 512Mi · Java 25]
 
     subgraph GCP [Google Cloud Run — us-central1 Always Free]
-        Inventory -.->|Quarkus REST Client<br/>HTTPS| Catalog
+        Inventory -.->|REST Client| Catalog
+        Orders -.->|REST Client| Catalog
+        Orders -.->|REST Client| Inventory
+        Payments -.->|REST Client| Orders
     end
 
     subgraph Neon [Neon Serverless PostgreSQL — Database-per-Service]
         CatalogDB[(catalog_db)]
         InventoryDB[(inventory_db)]
+        OrdersDB[(orders_db)]
+        PaymentsDB[(payments_db)]
     end
 
     Catalog -->|JDBC + Flyway| CatalogDB
     Inventory -->|JDBC + Flyway| InventoryDB
+    Orders -->|JDBC + Flyway| OrdersDB
+    Payments -->|JDBC + Flyway| PaymentsDB
 ```
 
 ### Live Endpoints
 - **Frontend:** `https://quantum-store-poc.gbolanoscruz.workers.dev`
 - **Catalog API:** `https://catalog-service-hlbrzrqapa-uc.a.run.app/api/catalog/products`
 - **Inventory API:** `https://inventory-service-hlbrzrqapa-uc.a.run.app/api/inventory`
+- **Orders API:** `https://orders-service-hlbrzrqapa-uc.a.run.app/api/orders`
+- **Payments API:** `https://payments-service-hlbrzrqapa-uc.a.run.app/api/payments`
 
 ## Current Stack & Infrastructure
 
 | Layer | Technology | Hosting / Cost |
 | :--- | :--- | :--- |
-| **Frontend** | Static HTML/JS *(Live catalog & inventory controls)* | Cloudflare Workers ($0) |
+| **Frontend** | Static HTML/JS *(Live catalog, stock, orders & payments)* | Cloudflare Workers ($0) |
 | **Backend** | Quarkus 3.40 LTS, Java 25 LTS, Panache, Flyway, REST Client, SmallRye Health/OpenAPI | Google Cloud Run — `us-central1` Always Free ($0) |
 | **Container Registry** | Docker images *(cleanup policy: keep latest 2 versions)* | Google Artifact Registry — 0.5 GB Free Tier ($0) |
-| **Databases** | PostgreSQL (*Database-per-Service*: `catalog_db`, `inventory_db`) | Neon Serverless ($0) |
+| **Databases** | PostgreSQL (*Database-per-Service*: `catalog_db`, `inventory_db`, `orders_db`, `payments_db`) | Neon Serverless ($0) |
 | **CI/CD & Security** | GitHub Actions, OIDC (Workload Identity Federation), Trivy, CodeQL, Dependabot | GitHub ($0) |
 
 ## DevSecOps Controls
@@ -55,7 +66,9 @@ flowchart LR
 ├── frontend/                # Storefront static assets (deployed to Cloudflare Workers)
 └── services/
     ├── catalog-service/     # Product catalog microservice (Quarkus + Neon)
-    └── inventory-service/   # Stock & reservations microservice (Quarkus + REST Client + Neon)
+    ├── inventory-service/   # Stock & reservations microservice (Quarkus + REST Client + Neon)
+    ├── orders-service/      # Order orchestration & stock compensation (Quarkus + REST Clients + Neon)
+    └── payments-service/    # Payment capture, decline simulation & cascading refunds (Quarkus + REST Client + Neon)
 ```
 
 ## Documentation
@@ -63,15 +76,15 @@ flowchart LR
 - [Security Policy](SECURITY.md) — Active DevSecOps controls and vulnerability reporting process.
 - [ADR-001: Hybrid Zero-Cost Infrastructure](docs/adr/001-hybrid-zero-cost-infra.md) *(Superseded by ADR-004)*
 - [ADR-002: Fixed HTTPS with DuckDNS & Caddy](docs/adr/002-fixed-https-duckdns-caddy.md) *(Superseded by ADR-004)*
-- [ADR-003: Standardize Backend Microservices on Quarkus (Java 25 LTS)](docs/adr/003-microservices-stack-quarkus.md)
+- [ADR-003: Standardize Backend Microservices on Quarkus](docs/adr/003-microservices-stack-quarkus.md)
 - [ADR-004: Migrate Backend Microservices to Google Cloud Run](docs/adr/004-migrate-backend-to-cloud-run.md)
 
 ## Roadmap
 - [x] Monorepo setup + DevSecOps guardrails (Rulesets, Trivy, CodeQL, Dependabot)
 - [x] Zero-cost serverless architecture (Cloudflare Workers + Google Cloud Run + Neon + OIDC)
 - [x] Core microservices — Phase 1 (`catalog-service` & `inventory-service` with DB-per-service & REST Client)
-- [x] Live storefront with real-time inventory reservations
-- [ ] Core microservices — Phase 2 (`orders-service` & `payments-service`)
+- [x] Core microservices — Phase 2 (`orders-service` & `payments-service` with orchestration & cascading compensation)
+- [x] Live storefront with real-time stock, orders, payments & refunds
 - [ ] Event-driven messaging & observability
 
 ---

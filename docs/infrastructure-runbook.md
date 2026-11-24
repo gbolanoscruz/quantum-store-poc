@@ -97,10 +97,12 @@ Store the resulting values in **GitHub → Settings → Secrets and variables �
 
 Persistence is hosted on **Neon Free Tier** following the **Database-per-Service** pattern inside a single `quantum-store` project:
 
-| Microservice | Local Port Fallback | Neon Database | GitHub Secrets |
-| :--- | :--- | :--- | :--- |
-| `catalog-service` | `${PORT:8081}` | `catalog_db` | `CATALOG_DB_URL`, `CATALOG_DB_USER`, `CATALOG_DB_PASSWORD` |
-| `inventory-service` | `${PORT:8082}` | `inventory_db` | `INVENTORY_DB_URL`, `INVENTORY_DB_USER`, `INVENTORY_DB_PASSWORD` |
+| Microservice | Local Port Fallback | Neon Database | Upstream Env Vars | GitHub Secrets |
+| :--- | :--- | :--- | :--- | :--- |
+| `catalog-service` | `${PORT:8081}` | `catalog_db` | — | `CATALOG_DB_URL`, `CATALOG_DB_USER`, `CATALOG_DB_PASSWORD` |
+| `inventory-service` | `${PORT:8082}` | `inventory_db` | `CATALOG_SERVICE_URL` | `INVENTORY_DB_URL`, `INVENTORY_DB_USER`, `INVENTORY_DB_PASSWORD` |
+| `orders-service` | `${PORT:8083}` | `orders_db` | `CATALOG_SERVICE_URL`, `INVENTORY_SERVICE_URL` | `ORDERS_DB_URL`, `ORDERS_DB_USER`, `ORDERS_DB_PASSWORD` |
+| `payments-service` | `${PORT:8084}` | `payments_db` | `ORDERS_SERVICE_URL` | `PAYMENTS_DB_URL`, `PAYMENTS_DB_USER`, `PAYMENTS_DB_PASSWORD` |
 
 Schema migrations and seed data are executed automatically on startup by **Flyway**.
 
