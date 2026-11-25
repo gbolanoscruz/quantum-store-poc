@@ -24,7 +24,7 @@ const submitBtn = document.getElementById("submit-btn");
 const feedback = document.getElementById("form-feedback");
 
 const AUTH_SERVICE_URL = "https://auth-service-hlbrzrqapa-uc.a.run.app"; // Update after auth-service deploy
-const GOOGLE_CLIENT_ID = "517339877043-f3t2mcjuss8df2dhdehf9kiv5h2ciuob.apps.googleusercontent.com ";
+const GOOGLE_CLIENT_ID = "517339877043-f3t2mcjuss8df2dhdehf9kiv5h2ciuob.apps.googleusercontent.com";
 
 const TOKEN_STORAGE_KEY = "quantum_store_jwt";
 const USER_STORAGE_KEY = "quantum_store_user";
