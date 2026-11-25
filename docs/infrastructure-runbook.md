@@ -143,12 +143,34 @@ gcloud run services logs read catalog-service --region=us-central1 --limit=50
 
 ---
 
-## 6. Quick Troubleshooting Reference
+---
 
-| Symptom | Root Cause | Fix |
-| :--- | :--- | :--- |
-| First request after idle takes ~2–4s | Cloud Run scale-to-zero + Neon wake-up cold start | Expected on $0 tier; `--cpu-boost` is enabled to minimize startup time |
-| `gcloud run deploy` fails with container failed to start on port 8080 | Quarkus hardcoded a static port instead of reading `$PORT` \vert{} Ensure `application.properties` uses `quarkus.http.port=${PORT:808x}` |
-| GitHub Actions fails at `Authenticate to Google Cloud (OIDC)` | Missing `id-token: write` permission or wrong `GCP_WIF_PROVIDER` / repo condition | Verify `permissions: id-token: write` in workflow and WIF `attribute-condition` matches `gbolanoscruz/quantum-store-poc` |
-| Trivy blocks push on Alpine OS CVEs (e.g., `zlib`) | Base image `eclipse-temurin:25-jre-alpine` ships unpatched OS packages | Keep `RUN apk update && apk upgrade --no-cache` in Stage 2 of the `Dockerfile` |
-| Frontend shows `NetworkError` on `fetch` | CORS mismatch or outdated service URL | Verify `quarkus.http.cors.origins` includes `https://quantum-store-poc.gbolanoscruz.workers.dev` and `frontend/index.html` points to current `*.run.app` URLs |
+## 6. Testing & Observability Verification
+
+### Automated CI & Local Tests
+All four microservices are aggregated in the root `pom.xml` and executed in `.github/workflows/ci-tests.yml`:
+
+```powershell
+mvn test
+```
+
+### Live Health & Prometheus Metrics
+Every Cloud Run service exposes `/q/health/ready` and `/q/metrics`:
+
+```powershell
+Invoke-RestMethod "[https://payments-service-hlbrzrqapa-uc.a.run.app/q/health/ready](https://payments-service-hlbrzrqapa-uc.a.run.app/q/health/ready)"
+Invoke-RestMethod "[https://orders-service-hlbrzrqapa-uc.a.run.app/q/health/ready](https://orders-service-hlbrzrqapa-uc.a.run.app/q/health/ready)"
+```
+
+To inspect custom business counters in Prometheus format:
+
+```powershell
+(Invoke-RestMethod "[https://orders-service-hlbrzrqapa-uc.a.run.app/q/metrics](https://orders-service-hlbrzrqapa-uc.a.run.app/q/metrics)") -split "`n" | Select-String "quantum_orders_total|http_server_requests"
+(Invoke-RestMethod "[https://payments-service-hlbrzrqapa-uc.a.run.app/q/metrics](https://payments-service-hlbrzrqapa-uc.a.run.app/q/metrics)") -split "`n" | Select-String "quantum_payments_total"
+```
+
+### Correlated Traces in Google Cloud Logging
+1. Run an end-to-end flow from the storefront (**Place Order → Pay → Refund**).
+2. Open **Google Cloud Console → Logging → Logs Explorer**.
+3. Filter by `resource.type="cloud_run_revision"` and inspect JSON logs from `payments-service` or `orders-service`.
+4. Filter or group by the `trace` / `traceId` field to view correlated logs across `payments-service`, `orders-service`, `inventory-service`, and `catalog-service`.
