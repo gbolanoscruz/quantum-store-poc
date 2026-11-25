@@ -174,3 +174,17 @@ To inspect custom business counters in Prometheus format:
 2. Open **Google Cloud Console → Logging → Logs Explorer**.
 3. Filter by `resource.type="cloud_run_revision"` and inspect JSON logs from `payments-service` or `orders-service`.
 4. Filter or group by the `trace` / `traceId` field to view correlated logs across `payments-service`, `orders-service`, `inventory-service`, and `catalog-service`.
+
+---
+
+## 7. Authentication Service (`auth-service`) & Google OAuth
+
+### Service & Database
+- **Cloud Run Service:** `auth-service` (`us-central1`, `512Mi`, `1 CPU`, `--cpu-boost`, `--min-instances=0`, `--max-instances=2`).
+- **Endpoint:** `https://auth-service-hlbrzrqapa-uc.a.run.app/api/auth`
+- **Database:** Isolated `auth_db` database on Neon PostgreSQL, managed via Flyway (`V1__create_users_table.sql`).
+
+### Required Secrets & Configuration
+- **GitHub Actions Secrets:** `AUTH_DB_URL`, `AUTH_DB_USER`, `AUTH_DB_PASSWORD`, `JWT_SIGNING_SECRET`, and `GOOGLE_CLIENT_ID`.
+- **Google Cloud Console:** Web OAuth 2.0 Client ID (`*.apps.googleusercontent.com`) with `https://quantum-store-poc.gbolanoscruz.workers.dev` listed under **Authorized JavaScript origins**.
+- **Frontend (`frontend/app.js`):** Configured with `AUTH_SERVICE_URL` and the matching `GOOGLE_CLIENT_ID` to render the Google Sign-In button, manage the Bearer JWT in session storage, and display login/sign-up/logout controls.
