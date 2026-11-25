@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quantum Store — Cloud-Native Microservices PoC</title>
   <link rel="stylesheet" href="styles.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -14,101 +15,162 @@
         <h1>Quantum Store</h1>
         <p class="subtitle">Quarkus (Java 25) &bull; Google Cloud Run &bull; Neon PostgreSQL &bull; Cloudflare Workers</p>
       </div>
-      <div class="status-group">
-        <div class="status-badge">
-          <span id="catalog-dot" class="dot"></span>
-          <span id="catalog-status">Catalog: ...</span>
+
+      <div class="header-right">
+        <div id="auth-controls" class="auth-controls">
+          <span id="auth-user-label" class="auth-user hidden"></span>
+          <button id="open-auth-btn" type="button" class="btn-secondary auth-trigger">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Zm0 2.25c-3.87 0-7.5 1.94-7.5 4.5V21h15v-2.25c0-2.56-3.63-4.5-7.5-4.5Z" fill="currentColor"/>
+            </svg>
+            <span>Sign In / Sign Up</span>
+          </button>
+          <button id="logout-btn" type="button" class="btn-danger hidden">Logout</button>
         </div>
-        <div class="status-badge">
-          <span id="inventory-dot" class="dot"></span>
-          <span id="inventory-status">Inventory: ...</span>
-        </div>
-        <div class="status-badge">
-          <span id="orders-dot" class="dot"></span>
-          <span id="orders-status">Orders: ...</span>
-        </div>
-        <div class="status-badge">
-          <span id="payments-dot" class="dot"></span>
-          <span id="payments-status">Payments: ...</span>
+
+        <div class="status-group">
+          <div class="status-badge">
+            <span id="catalog-dot" class="dot"></span>
+            <span id="catalog-status">Catalog: ...</span>
+          </div>
+          <div class="status-badge">
+            <span id="inventory-dot" class="dot"></span>
+            <span id="inventory-status">Inventory: ...</span>
+          </div>
+          <div class="status-badge">
+            <span id="orders-dot" class="dot"></span>
+            <span id="orders-status">Orders: ...</span>
+          </div>
+          <div class="status-badge">
+            <span id="payments-dot" class="dot"></span>
+            <span id="payments-status">Payments: ...</span>
+          </div>
         </div>
       </div>
     </header>
 
-    <div class="toolbar">
-      <div class="toolbar-controls">
-        <div class="toolbar-field">
-          <span>Customer Email:</span>
-          <input id="customer-email" type="email" value="buyer@quantumstore.dev" placeholder="you@example.com" />
+    <!-- Dedicated Auth Screen -->
+    <section id="auth-view" class="auth-view hidden" aria-label="Authentication">
+      <div class="auth-card card">
+        <div class="auth-top">
+          <div>
+            <h2 id="auth-title">Sign In</h2>
+            <p class="subtitle">Authenticate with email &amp; password or continue with Google</p>
+          </div>
+          <button id="back-to-store-btn" type="button" class="btn-secondary">&larr; Store</button>
         </div>
-        <div class="toolbar-field">
-          <span>Payment Method:</span>
-          <select id="payment-method">
-            <option value="CARD">CARD (Approve)</option>
-            <option value="PAYPAL">PAYPAL (Approve)</option>
-            <option value="DECLINED">DECLINED (Simulate 402)</option>
-          </select>
+
+        <div class="auth-tabs" role="tablist">
+          <button id="tab-login" type="button" class="auth-tab active" role="tab" aria-selected="true">Sign In</button>
+          <button id="tab-register" type="button" class="auth-tab" role="tab" aria-selected="false">Sign Up</button>
+        </div>
+
+        <form id="auth-form">
+          <label id="auth-name-field" class="hidden">
+            Full Name
+            <input name="fullName" maxlength="150" placeholder="Ada Lovelace" />
+          </label>
+          <label>
+            Email
+            <input name="email" type="email" required maxlength="180" placeholder="buyer@quantumstore.dev" />
+          </label>
+          <label>
+            Password
+            <input name="password" type="password" required minlength="8" maxlength="128" placeholder="At least 8 characters" />
+          </label>
+          <button id="auth-submit-btn" class="btn-primary" type="submit">Sign In</button>
+          <div id="auth-feedback" class="feedback"></div>
+        </form>
+
+        <div class="auth-divider"><span>or</span></div>
+
+        <div class="google-auth-box">
+          <div id="google-signin-button"></div>
+          <p id="google-config-hint" class="auth-hint hidden">
+            Set <code>GOOGLE_CLIENT_ID</code> in <code>frontend/app.js</code> to enable the Google button.
+          </p>
         </div>
       </div>
-      <div id="action-feedback" class="feedback"></div>
-    </div>
+    </section>
 
-    <div class="layout">
-      <main class="main-stack">
-        <section>
-          <div class="section-header">
-            <h2>Catalog &amp; Live Stock</h2>
+    <!-- Main Storefront View -->
+    <div id="store-view">
+      <div class="toolbar">
+        <div class="toolbar-controls">
+          <div class="toolbar-field">
+            <span>Customer Email:</span>
+            <input id="customer-email" type="email" value="buyer@quantumstore.dev" placeholder="you@example.com" />
           </div>
-          <div id="products-grid" class="grid">
-            <div class="empty">Loading catalog &amp; live inventory from Google Cloud Run...</div>
+          <div class="toolbar-field">
+            <span>Payment Method:</span>
+            <select id="payment-method">
+              <option value="CARD">CARD (Approve)</option>
+              <option value="PAYPAL">PAYPAL (Approve)</option>
+              <option value="DECLINED">DECLINED (Simulate 402)</option>
+            </select>
           </div>
-        </section>
+        </div>
+        <div id="action-feedback" class="feedback"></div>
+      </div>
 
-        <section>
-          <div class="section-header">
-            <h2>Recent Orders</h2>
-          </div>
-          <div id="orders-list" class="records-list">
-            <div class="empty">Loading orders from orders-service...</div>
-          </div>
-        </section>
+      <div class="layout">
+        <main class="main-stack">
+          <section>
+            <div class="section-header">
+              <h2>Catalog &amp; Live Stock</h2>
+            </div>
+            <div id="products-grid" class="grid">
+              <div class="empty">Loading catalog &amp; live inventory from Google Cloud Run...</div>
+            </div>
+          </section>
 
-        <section>
-          <div class="section-header">
-            <h2>Recent Payments</h2>
-          </div>
-          <div id="payments-list" class="records-list">
-            <div class="empty">Loading payments from payments-service...</div>
-          </div>
-        </section>
-      </main>
+          <section>
+            <div class="section-header">
+              <h2>Recent Orders</h2>
+            </div>
+            <div id="orders-list" class="records-list">
+              <div class="empty">Loading orders from orders-service...</div>
+            </div>
+          </section>
 
-      <aside class="card">
-        <h3>Add Product</h3>
-        <form id="product-form">
-          <label>
-            SKU
-            <input name="sku" required maxlength="64" placeholder="QTM-SSD-004" />
-          </label>
-          <label>
-            Name
-            <input name="name" required maxlength="150" placeholder="NVMe Quantum Drive 2TB" />
-          </label>
-          <label>
-            Description
-            <textarea name="description" rows="3" placeholder="High-throughput PCIe 5.0 storage"></textarea>
-          </label>
-          <label>
-            Price (USD)
-            <input name="price" type="number" step="0.01" min="0" required placeholder="199.99" />
-          </label>
-          <label>
-            Initial Stock
-            <input name="initialStock" type="number" step="1" min="0" value="10" required />
-          </label>
-          <button id="submit-btn" class="btn-primary" type="submit">Create Product</button>
-          <div id="form-feedback" class="feedback"></div>
-        </form>
-      </aside>
+          <section>
+            <div class="section-header">
+              <h2>Recent Payments</h2>
+            </div>
+            <div id="payments-list" class="records-list">
+              <div class="empty">Loading payments from payments-service...</div>
+            </div>
+          </section>
+        </main>
+
+        <aside class="card">
+          <h3>Add Product</h3>
+          <form id="product-form">
+            <label>
+              SKU
+              <input name="sku" required maxlength="64" placeholder="QTM-SSD-004" />
+            </label>
+            <label>
+              Name
+              <input name="name" required maxlength="150" placeholder="NVMe Quantum Drive 2TB" />
+            </label>
+            <label>
+              Description
+              <textarea name="description" rows="3" placeholder="High-throughput PCIe 5.0 storage"></textarea>
+            </label>
+            <label>
+              Price (USD)
+              <input name="price" type="number" step="0.01" min="0" required placeholder="199.99" />
+            </label>
+            <label>
+              Initial Stock
+              <input name="initialStock" type="number" step="1" min="0" value="10" required />
+            </label>
+            <button id="submit-btn" class="btn-primary" type="submit">Create Product</button>
+            <div id="form-feedback" class="feedback"></div>
+          </form>
+        </aside>
+      </div>
     </div>
   </div>
 </body>

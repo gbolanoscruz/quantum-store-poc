@@ -14,5 +14,6 @@
         <module>services/inventory-service</module>
         <module>services/orders-service</module>
         <module>services/payments-service</module>
+        <module>services/auth-service</module>
     </modules>
 </project>
