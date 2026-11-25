@@ -23,6 +23,235 @@ const form = document.getElementById("product-form");
 const submitBtn = document.getElementById("submit-btn");
 const feedback = document.getElementById("form-feedback");
 
+const AUTH_SERVICE_URL = "https://auth-service-hlbrzrqapa-uc.a.run.app"; // Update after auth-service deploy
+const GOOGLE_CLIENT_ID = "517339877043-f3t2mcjuss8df2dhdehf9kiv5h2ciuob.apps.googleusercontent.com ";
+
+const TOKEN_STORAGE_KEY = "quantum_store_jwt";
+const USER_STORAGE_KEY = "quantum_store_user";
+
+let authMode = "login"; // "login" | "register"
+
+const storeView = document.getElementById("store-view");
+const authView = document.getElementById("auth-view");
+const openAuthBtn = document.getElementById("open-auth-btn");
+const logoutBtn = document.getElementById("logout-btn");
+const authUserLabel = document.getElementById("auth-user-label");
+const backToStoreBtn = document.getElementById("back-to-store-btn");
+const tabLogin = document.getElementById("tab-login");
+const tabRegister = document.getElementById("tab-register");
+const authTitle = document.getElementById("auth-title");
+const authNameField = document.getElementById("auth-name-field");
+const authForm = document.getElementById("auth-form");
+const authSubmitBtn = document.getElementById("auth-submit-btn");
+const authFeedback = document.getElementById("auth-feedback");
+const googleHint = document.getElementById("google-config-hint");
+
+function getToken() {
+  return localStorage.getItem(TOKEN_STORAGE_KEY) || "";
+}
+
+function getStoredUser() {
+  try {
+    const raw = localStorage.getItem(USER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setSession(token, user) {
+  localStorage.setItem(TOKEN_STORAGE_KEY, token);
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  if (user && user.email && customerEmailInput) {
+    customerEmailInput.value = user.email;
+  }
+  renderAuthHeader();
+}
+
+function clearSession() {
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+  localStorage.removeItem(USER_STORAGE_KEY);
+  renderAuthHeader();
+}
+
+function getAuthHeaders(extraHeaders = {}) {
+  const token = getToken();
+  const headers = { ...extraHeaders };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+function renderAuthHeader() {
+  const user = getStoredUser();
+  if (user && getToken()) {
+    authUserLabel.textContent = user.fullName || user.email;
+    authUserLabel.classList.remove("hidden");
+    openAuthBtn.classList.add("hidden");
+    logoutBtn.classList.remove("hidden");
+  } else {
+    authUserLabel.textContent = "";
+    authUserLabel.classList.add("hidden");
+    openAuthBtn.classList.remove("hidden");
+    logoutBtn.classList.add("hidden");
+  }
+}
+
+function showAuthScreen(mode = "login") {
+  setAuthMode(mode);
+  authFeedback.className = "feedback";
+  authFeedback.textContent = "";
+  storeView.classList.add("hidden");
+  authView.classList.remove("hidden");
+  initGoogleSignIn();
+}
+
+function showStoreScreen() {
+  authView.classList.add("hidden");
+  storeView.classList.remove("hidden");
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const isRegister = mode === "register";
+  tabLogin.classList.toggle("active", !isRegister);
+  tabRegister.classList.toggle("active", isRegister);
+  tabLogin.setAttribute("aria-selected", String(!isRegister));
+  tabRegister.setAttribute("aria-selected", String(isRegister));
+
+  authTitle.textContent = isRegister ? "Create Account" : "Sign In";
+  authSubmitBtn.textContent = isRegister ? "Create Account" : "Sign In";
+  authNameField.classList.toggle("hidden", !isRegister);
+
+  const nameInput = authForm.querySelector('input[name="fullName"]');
+  if (nameInput) {
+    nameInput.required = isRegister;
+  }
+}
+
+async function handleGoogleCredential(response) {
+  if (!response || !response.credential) return;
+  authFeedback.className = "feedback";
+  authFeedback.textContent = "Verifying Google session...";
+
+  try {
+    const res = await fetch(`${AUTH_SERVICE_URL}/api/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken: response.credential })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    setSession(data.token, data.user);
+    showStoreScreen();
+  } catch (err) {
+    authFeedback.className = "feedback error";
+    authFeedback.textContent = `Google Sign-In failed: ${err.message}`;
+  }
+}
+
+function initGoogleSignIn() {
+  const buttonContainer = document.getElementById("google-signin-button");
+  if (!buttonContainer) return;
+
+  if (!GOOGLE_CLIENT_ID) {
+    googleHint.classList.remove("hidden");
+    return;
+  }
+  googleHint.classList.add("hidden");
+
+  if (window.google && window.google.accounts && window.google.accounts.id) {
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredential
+    });
+    buttonContainer.replaceChildren();
+    window.google.accounts.id.renderButton(buttonContainer, {
+      theme: "outline",
+      size: "large",
+      width: 360
+    });
+  }
+}
+
+async function restoreSessionIfValid() {
+  const token = getToken();
+  if (!token) {
+    renderAuthHeader();
+    return;
+  }
+  try {
+    const res = await fetch(`${AUTH_SERVICE_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      clearSession();
+      return;
+    }
+    const profile = await res.json();
+    setSession(token, profile);
+  } catch {
+    renderAuthHeader();
+  }
+}
+
+openAuthBtn.addEventListener("click", () => showAuthScreen("login"));
+backToStoreBtn.addEventListener("click", showStoreScreen);
+tabLogin.addEventListener("click", () => setAuthMode("login"));
+tabRegister.addEventListener("click", () => setAuthMode("register"));
+
+logoutBtn.addEventListener("click", () => {
+  clearSession();
+  showStoreScreen();
+});
+
+authForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  authSubmitBtn.disabled = true;
+  authFeedback.className = "feedback";
+  authFeedback.textContent = authMode === "register" ? "Creating account..." : "Signing in...";
+
+  const formData = new FormData(authForm);
+  const email = String(formData.get("email") || "").trim();
+  const password = String(formData.get("password") || "");
+  const fullName = String(formData.get("fullName") || "").trim();
+
+  const endpoint = authMode === "register" ? "/api/auth/register" : "/api/auth/login";
+  const payload = authMode === "register"
+    ? { fullName, email, password }
+    : { email, password };
+
+  try {
+    const res = await fetch(`${AUTH_SERVICE_URL}${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+
+    setSession(data.token, data.user);
+    authForm.reset();
+    showStoreScreen();
+  } catch (err) {
+    authFeedback.className = "feedback error";
+    authFeedback.textContent = `Authentication failed: ${err.message}`;
+  } finally {
+    authSubmitBtn.disabled = false;
+  }
+});
+
+window.addEventListener("load", () => {
+  renderAuthHeader();
+  restoreSessionIfValid();
+  initGoogleSignIn();
+});
+
 function setBadge(dotEl, textEl, online, message) {
   dotEl.className = "dot " + (online ? "online" : "offline");
   textEl.textContent = message;
