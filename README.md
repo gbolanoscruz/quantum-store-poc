@@ -10,7 +10,7 @@ Cloud-native e-commerce Proof of Concept built with **Quarkus (Java 25 LTS)** mi
 
 ```mermaid
 flowchart LR
-    User([Browser]) -->|HTTPS| CF[Cloudflare Workers<br/>Storefront Frontend]
+    User([Browser]) -->|HTTPS| Auth[auth-service<br/>Cloud Run · 512Mi · Java 25]
     User -->|HTTPS| Catalog[catalog-service<br/>Cloud Run · 512Mi · Java 25]
     User -->|HTTPS| Inventory[inventory-service<br/>Cloud Run · 512Mi · Java 25]
     User -->|HTTPS| Orders[orders-service<br/>Cloud Run · 512Mi · Java 25]
@@ -42,6 +42,8 @@ flowchart LR
 - **Inventory API:** `https://inventory-service-hlbrzrqapa-uc.a.run.app/api/inventory`
 - **Orders API:** `https://orders-service-hlbrzrqapa-uc.a.run.app/api/orders`
 - **Payments API:** `https://payments-service-hlbrzrqapa-uc.a.run.app/api/payments`
+- **Auth API:** `https://auth-service-hlbrzrqapa-uc.a.run.app/api/auth` (/register, /login, /google, /me)
+
 
 *(Every microservice also exposes `/q/health/ready`, `/q/metrics`, and `/q/openapi`).*
 
@@ -52,7 +54,7 @@ flowchart LR
 | **Frontend** | Vanilla HTML, CSS & JS *(live catalog, stock, orders, payments & refunds)* | Cloudflare Workers ($0) |
 | **Backend** | Quarkus 3.40 LTS, Java 25 LTS, Panache, Flyway, REST Client, SmallRye Health/OpenAPI | Google Cloud Run — `us-central1` Always Free ($0) |
 | **Container Registry** | Hardened Alpine Docker images *(retention: keep latest 2 versions)* | Google Artifact Registry — 0.5 GB Free Tier ($0) |
-| **Databases** | PostgreSQL (*Database-per-Service*: `catalog_db`, `inventory_db`, `orders_db`, `payments_db`) | Neon Serverless ($0) |
+| **Databases** | PostgreSQL (*Database-per-Service*: `catalog_db`, `inventory_db`, `orders_db`, `payments_db`, `auth_db`) | Neon Serverless ($0) |
 | **Testing** | Maven multi-module, JUnit 5, RestAssured, Mockito, Quarkus Dev Services | GitHub Actions ($0) |
 | **Observability** | GCP Structured JSON Logging, OpenTelemetry (`traceparent`), Micrometer Prometheus (`/q/metrics`) | Google Cloud Logging Free Tier ($0) |
 | **CI/CD & Security** | GitHub Actions, OIDC (Workload Identity Federation), Trivy, CodeQL, Dependabot | GitHub ($0) |
@@ -124,6 +126,7 @@ All four microservices include zero-cost, cloud-native observability:
 - [x] Live storefront with real-time stock, orders, payments & refunds
 - [x] Automated integration testing (Maven multi-module, Quarkus Dev Services & GitHub Actions CI)
 - [x] Native observability (GCP JSON logging, OpenTelemetry trace propagation & Prometheus metrics)
+- [x] User sessions with JWT, email/password auth, and Google Sign-In
 - [ ] Event-driven async messaging (optional next phase)
 
 ---
